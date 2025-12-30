@@ -1,135 +1,221 @@
-# Turborepo starter
+# Auto-Resurrect Runtime
 
-This Turborepo starter is maintained by the Turborepo core team.
+**A Signature-Driven Self-Healing Runtime for Mission-Critical Systems**
 
-## Using this example
+---
 
-Run the following command:
+## 🎯 Problem Statement
 
-```sh
-npx create-turbo@latest
+Modern mission-critical systems (defence, aerospace, industrial automation) fail not only due to complete hardware breakdowns, but due to subtle runtime degradations such as:
+
+- Stalled threads
+- Timing violations
+- Partial data corruption
+- Cascading module failures
+
+Existing resilience mechanisms treat failure as a binary event (alive / dead), leading to repeated resets, loss of context, and degraded operational continuity.
+
+There is a need for a **self-healing runtime system** that can detect failure patterns, isolate faulty components, and autonomously reconfigure system behavior to maintain operation without full system restart.
+
+**Domain:** IoT & Automation / Open Innovation  
+**Inspiration:** Self-healing computing elements (SIH-25163)
+
+---
+
+## ❌ Why Existing Solutions Fail
+
+| Existing Approach | Why It's Insufficient |
+|-------------------|----------------------|
+| **Watchdog Timers** | Binary logic (alive/dead). Blind resets with no diagnosis. Repeated reset loops (e.g., Mars Pathfinder). |
+| **Process Managers (PM2, systemd)** | Restart services but cannot reason about why failure occurred or adapt behavior. |
+| **Hardware Redundancy Alone** | Wastes resources; does not handle software-level degradations or partial failures. |
+| **Kubernetes-style Self-Healing** | Designed for cloud services, not embedded / real-time systems. No fault semantics. |
+
+**➡️ All of the above react to failure. None understand it.**
+
+---
+
+## 💡 Core Insight (WOW Feature)
+
+> **Failures are not binary. They leave signatures.**
+
+Instead of restarting systems blindly, Auto-Resurrect Runtime:
+
+1. Observes invariant violations
+2. Matches them to known fault signatures
+3. Executes context-aware recovery actions
+
+This mirrors how FPGA partial reconfiguration works conceptually — bypassing faulty blocks instead of rebooting the entire system.
+
+---
+
+## 🏗️ System Overview
+
+Auto-Resurrect Runtime sits beside the system it protects.
+
+**It does not replace:**
+- Application logic
+- OS scheduler
+- Hardware watchdogs
+
+Instead, it acts as an **intelligent supervisory runtime**.
+
+**Core Loop:**
+```
+Observe → Detect → Classify → Decide → Recover → Continue
 ```
 
-## What's inside?
+---
 
-This Turborepo includes the following packages/apps:
+## 🔍 Failure Detection Engine (Low-Level & Deterministic)
 
-### Apps and Packages
+### What We Monitor
 
-- `docs`: a [Next.js](https://nextjs.org/) app
-- `web`: another [Next.js](https://nextjs.org/) app
-- `@repo/ui`: a stub React component library shared by both `web` and `docs` applications
-- `@repo/eslint-config`: `eslint` configurations (includes `eslint-config-next` and `eslint-config-prettier`)
-- `@repo/typescript-config`: `tsconfig.json`s used throughout the monorepo
+The system defines **invariants** — properties that must always hold.
 
-Each package/app is 100% [TypeScript](https://www.typescriptlang.org/).
+**Examples:**
+- Module heartbeat interval ≤ 200ms
+- Queue depth ≤ threshold
+- Response latency within time window
+- Data checksum consistency
 
-### Utilities
+### How Detection Works
 
-This Turborepo has some additional tools already setup for you:
+- Metrics are sampled over sliding time windows
+- Comparators detect violations
+- Violations generate fault signals
 
-- [TypeScript](https://www.typescriptlang.org/) for static type checking
-- [ESLint](https://eslint.org/) for code linting
-- [Prettier](https://prettier.io) for code formatting
-
-### Build
-
-To build all apps and packages, run the following command:
-
+**Important:**
 ```
-cd my-turborepo
-
-# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
-turbo build
-
-# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
-npx turbo build
-yarn dlx turbo build
-pnpm exec turbo build
+Invariant Violation ≠ Failure
+Multiple correlated violations = Fault Signature
 ```
 
-You can build a specific package by using a [filter](https://turborepo.com/docs/crafting-your-repository/running-tasks#using-filters):
+**No ML. No heuristics. Fully deterministic.**
+
+---
+
+## 🧠 Decision Engine (Not "AI Decides")
+
+The decision engine maps **fault signatures → recovery actions** using a rule-based priority system.
+
+### Example Fault Mapping
+
+| Fault Signature | Root Cause | Action |
+|----------------|------------|--------|
+| Heartbeat loss + CPU spike | Thread deadlock | Restart module |
+| Latency spike + checksum errors | Data corruption | Switch to redundant module |
+| Repeated restarts | Persistent fault | Graceful degradation |
+
+### Safety Rules
+
+- Never restart the entire system unless unavoidable
+- Prefer isolation over reset
+- Preserve system continuity
+
+---
+
+## 🔧 Recovery Actions
+
+Auto-Resurrect Runtime can:
+
+- Restart only the faulty module
+- Switch execution to a redundant module
+- Bypass degraded paths
+- Reduce functionality gracefully
+- Escalate only if recovery fails
+
+> **We do not heal hardware.**  
+> **We reconfigure system behavior around faulty components.**
+
+---
+
+## 🎬 Demo Walkthrough (What Judges Will See)
+
+**Scenario: CPU Stall in Processing Module**
+
+1. System runs normally
+2. **Fault injected:** processing module stalls
+3. **Invariant violated:** heartbeat timeout
+4. **Fault signature matched:** thread stall
+5. **Decision engine selects:** module restart
+6. Module recovers
+7. System continues operation
+
+✔ No full restart  
+✔ No manual intervention
+
+---
+
+## 🏛️ System Architecture Diagram
 
 ```
-# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
-turbo build --filter=docs
-
-# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
-npx turbo build --filter=docs
-yarn exec turbo build --filter=docs
-pnpm exec turbo build --filter=docs
++----------------------+
+|  Simulated System    |
+|  (Modules)           |
++----------+-----------+
+           |
+           v
++----------------------+
+| Failure Detection    |
+| Engine               |
+| (Invariants)         |
++----------+-----------+
+           |
+           v
++----------------------+
+| Fault Signature      |
+| Matcher              |
++----------+-----------+
+           |
+           v
++----------------------+
+| Decision Engine      |
+| (Rules & Priority)   |
++----------+-----------+
+           |
+           v
++----------------------+
+| Recovery Executor    |
++----------------------+
 ```
 
-### Develop
+*(FPGA / RTOS mapping provided conceptually in docs)*
 
-To develop all apps and packages, run the following command:
+---
 
-```
-cd my-turborepo
+## ⚠️ Limitations (Intentional & Explicit)
 
-# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
-turbo dev
+- Does not repair physical hardware
+- Hardware fault detection is simulated
+- Partial FPGA reconfiguration is conceptual, not physical
+- Designed as a runtime layer, not a standalone OS
 
-# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
-npx turbo dev
-yarn exec turbo dev
-pnpm exec turbo dev
-```
+**➡️ These are conscious design choices for clarity and feasibility.**
 
-You can develop a specific package by using a [filter](https://turborepo.com/docs/crafting-your-repository/running-tasks#using-filters):
+---
 
-```
-# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
-turbo dev --filter=web
+## 🚀 Round-2 Expansion Plan
 
-# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
-npx turbo dev --filter=web
-yarn exec turbo dev --filter=web
-pnpm exec turbo dev --filter=web
-```
+Planned improvements:
 
-### Remote Caching
+- Hierarchical monitoring (module → subsystem → system)
+- Persistent vs transient fault classification
+- Graceful degradation strategies
+- Mapping runtime logic to FPGA partial reconfiguration
+- Distributed self-healing (multi-node)
+- Formal fault taxonomy
 
-> [!TIP]
-> Vercel Remote Cache is free for all plans. Get started today at [vercel.com](https://vercel.com/signup?/signup?utm_source=remote-cache-sdk&utm_campaign=free_remote_cache).
+---
 
-Turborepo can use a technique known as [Remote Caching](https://turborepo.com/docs/core-concepts/remote-caching) to share cache artifacts across machines, enabling you to share build caches with your team and CI/CD pipelines.
+## 📄 License
 
-By default, Turborepo will cache locally. To enable Remote Caching you will need an account with Vercel. If you don't have an account you can [create one](https://vercel.com/signup?utm_source=turborepo-examples), then enter the following commands:
+*Add your license information here*
 
-```
-cd my-turborepo
+## 🤝 Contributing
 
-# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
-turbo login
+*Add contribution guidelines here*
 
-# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
-npx turbo login
-yarn exec turbo login
-pnpm exec turbo login
-```
+## 📧 Contact
 
-This will authenticate the Turborepo CLI with your [Vercel account](https://vercel.com/docs/concepts/personal-accounts/overview).
-
-Next, you can link your Turborepo to your Remote Cache by running the following command from the root of your Turborepo:
-
-```
-# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
-turbo link
-
-# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
-npx turbo link
-yarn exec turbo link
-pnpm exec turbo link
-```
-
-## Useful Links
-
-Learn more about the power of Turborepo:
-
-- [Tasks](https://turborepo.com/docs/crafting-your-repository/running-tasks)
-- [Caching](https://turborepo.com/docs/crafting-your-repository/caching)
-- [Remote Caching](https://turborepo.com/docs/core-concepts/remote-caching)
-- [Filtering](https://turborepo.com/docs/crafting-your-repository/running-tasks#using-filters)
-- [Configuration Options](https://turborepo.com/docs/reference/configuration)
-- [CLI Usage](https://turborepo.com/docs/reference/command-line-reference)
+*Add contact information here*
