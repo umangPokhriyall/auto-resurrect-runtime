@@ -1,4 +1,3 @@
-// faults.ts
 
 export type FaultType =
     | "PROCESSOR_STALL"

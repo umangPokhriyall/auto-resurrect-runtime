@@ -1,4 +1,4 @@
-// transmitter.ts
+
 
 import type { ProcessedData } from "./processor";
 

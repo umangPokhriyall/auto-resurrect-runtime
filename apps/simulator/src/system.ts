@@ -1,4 +1,4 @@
-// apps/simulator/src/system.ts
+
 
 import { Sensor } from "./modules/sensor";
 import { Processor } from "./modules/processor";

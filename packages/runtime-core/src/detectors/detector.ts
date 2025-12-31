@@ -1,5 +1,3 @@
-// packages/runtime-core/src/detectors/detector.ts
-
 import type { InvariantViolation, FaultEvent } from "shared-types/client";
 
 

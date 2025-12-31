@@ -165,7 +165,7 @@ Auto-Resurrect Runtime can:
 
 ### 🎥 Demo Video  
 
-👉 [![Watch Full Demo](./assets/image1.png)](https://d14k6sh16ssaej.cloudfront.net/round1_Demo.mp4)  
+[![Watch Full Demo](./assets/image1.png)](https://d14k6sh16ssaej.cloudfront.net/round1_Demo.mp4)  
 
 
 **Scenario: CPU Stall in Processing Module**
@@ -230,12 +230,17 @@ Planned improvements:
 
 ## License
 
-*Add your license information here*
+Distributed under the MIT License. See `LICENSE` for more information.
 
 ## Contributing
 
-*Add contribution guidelines here*
+Contributions are what make the open source community such an amazing place to learn, inspire, and create. Any contributions you make are **greatly appreciated**.
+
+If you have a suggestion that would make this better, please fork the repo and create a pull request. You can also simply open an issue with the tag "enhancement".
 
 ## Contact
 
-*Add contact information here*
+**Team Lead:** Umang Pokhriyal  
+**GitHub:** [@umangPokhriyall](https://github.com/umangPokhriyall)  
+
+**Project Link:** [https://github.com/umangPokhriyall/auto-resurrect-runtime](https://github.com/umangPokhriyall/auto-resurrect-runtime)

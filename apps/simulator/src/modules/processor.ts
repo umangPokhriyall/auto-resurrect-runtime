@@ -1,4 +1,3 @@
-// apps/simulator/src/modules/processor.ts
 
 import type { SensorOutput } from "./sensor";
 import { FaultInjector } from "../faults";
