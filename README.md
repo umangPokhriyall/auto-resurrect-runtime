@@ -201,7 +201,6 @@ bun index.ts
 
 ![Auto-Resurrect Architecture Diagram - Self Healing Loop](./assets/architecture.png)  
 
-*(FPGA / RTOS mapping provided conceptually in docs)*
 
 ---
 
