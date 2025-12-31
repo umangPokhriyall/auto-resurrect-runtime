@@ -4,7 +4,7 @@
 
 ---
 
-## 🎯 Problem Statement
+## Problem Statement
 
 Modern mission-critical systems (defence, aerospace, industrial automation) fail not only due to complete hardware breakdowns, but due to subtle runtime degradations such as:
 
@@ -22,7 +22,9 @@ There is a need for a **self-healing runtime system** that can detect failure pa
 
 ---
 
-## ❌ Why Existing Solutions Fail
+## Why Existing Solutions Fail
+
+*Unlike watchdog timers that only detect “alive/dead” states, Auto-Resurrect Runtime reasons about failure patterns and adapts system behavior instead of repeatedly resetting the system.*
 
 | Existing Approach | Why It's Insufficient |
 |-------------------|----------------------|
@@ -35,7 +37,7 @@ There is a need for a **self-healing runtime system** that can detect failure pa
 
 ---
 
-## 💡 Core Insight (WOW Feature)
+##  Core Insight
 
 > **Failures are not binary. They leave signatures.**
 
@@ -49,7 +51,7 @@ This mirrors how FPGA partial reconfiguration works conceptually — bypassing f
 
 ---
 
-## 🏗️ System Overview
+## System Overview
 
 Auto-Resurrect Runtime sits beside the system it protects.
 
@@ -67,6 +69,20 @@ Observe → Detect → Classify → Decide → Recover → Continue
 
 ---
 
+## Project Flow & Logic
+
+1. The protected system emits runtime telemetry (latency, heartbeat).
+2. Telemetry is continuously evaluated against predefined invariants.
+3. Invariant violations are collected over a sliding time window.
+4. Correlated violations are matched against known fault signatures.
+5. A deterministic decision engine selects the safest recovery action.
+6. Recovery is applied only to the affected module.
+7. System execution continues without full restart.
+
+```
+Telemetry → Invariants → Signatures → Decision → Recovery
+```
+
 ## Current Prototype Status (Round 1)
 
 The current implementation demonstrates:
@@ -83,7 +99,7 @@ Hardware-level reconfiguration and FPGA mapping are demonstrated conceptually an
 
 ---
 
-## 🔍 Failure Detection Engine (Low-Level & Deterministic)
+## Failure Detection Engine (Low-Level & Deterministic)
 
 ### What We Monitor
 
@@ -110,7 +126,7 @@ Multiple correlated violations = Fault Signature
 
 ---
 
-## 🧠 Decision Engine (Not "AI Decides")
+## Decision Engine (Not "AI Decides")
 
 The decision engine maps **fault signatures → recovery actions** using a rule-based priority system.
 
@@ -130,7 +146,7 @@ The decision engine maps **fault signatures → recovery actions** using a rule-
 
 ---
 
-## 🔧 Recovery Actions
+## Recovery Actions
 
 Auto-Resurrect Runtime can:
 
@@ -145,7 +161,12 @@ Auto-Resurrect Runtime can:
 
 ---
 
-## 🎬 Demo Walkthrough (What Judges Will See)
+## Demo Walkthrough 
+
+### 🎥 Demo Video  
+
+👉 [![Watch Full Demo](./assets/image1.png)](https://d14k6sh16ssaej.cloudfront.net/round1_Demo.mp4)  
+
 
 **Scenario: CPU Stall in Processing Module**
 
@@ -157,49 +178,34 @@ Auto-Resurrect Runtime can:
 6. Module recovers
 7. System continues operation
 
+
+**Console output clearly shows:**
+```
+[VIOLATION] → [SIGNATURE] → [ACTION] → [RECOVERED]
+```
+
 ✔ No full restart  
 ✔ No manual intervention
 
 ---
 
-## 🏛️ System Architecture Diagram
+## How to Run the Demo
 
+```bash
+cd apps/simulator
+bun install
+bun index.ts
 ```
-+----------------------+
-|  Simulated System    |
-|  (Modules)           |
-+----------+-----------+
-           |
-           v
-+----------------------+
-| Failure Detection    |
-| Engine               |
-| (Invariants)         |
-+----------+-----------+
-           |
-           v
-+----------------------+
-| Fault Signature      |
-| Matcher              |
-+----------+-----------+
-           |
-           v
-+----------------------+
-| Decision Engine      |
-| (Rules & Priority)   |
-+----------+-----------+
-           |
-           v
-+----------------------+
-| Recovery Executor    |
-+----------------------+
-```
+
+## System Architecture Diagram
+
+![Auto-Resurrect Architecture Diagram - Self Healing Loop](./assets/architecture.png)  
 
 *(FPGA / RTOS mapping provided conceptually in docs)*
 
 ---
 
-## ⚠️ Limitations (Intentional & Explicit)
+## Limitations (Intentional & Explicit)
 
 - Does not repair physical hardware
 - Hardware fault detection is simulated
@@ -210,7 +216,7 @@ Auto-Resurrect Runtime can:
 
 ---
 
-## 🚀 Round-2 Expansion Plan
+## Round-2 Expansion Plan
 
 Planned improvements:
 
@@ -223,14 +229,14 @@ Planned improvements:
 
 ---
 
-## 📄 License
+## License
 
 *Add your license information here*
 
-## 🤝 Contributing
+## Contributing
 
 *Add contribution guidelines here*
 
-## 📧 Contact
+## Contact
 
 *Add contact information here*
