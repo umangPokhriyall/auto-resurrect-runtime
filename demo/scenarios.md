@@ -31,10 +31,11 @@ FaultInjector.injectFault("PROCESSOR_STALL")
 3. Processing latency increases sharply
 4. Invariant violations are detected:
    - `LATENCY_VIOLATION`
+   - `BACKLOG_GROWTH`
 5. Violations persist across multiple cycles
 6. Fault persistence is detected
 7. Fault signature is matched:
-   - `THREAD_STALL` or `BACKLOG_PRESSURE`
+   - `BACKLOG_PRESSURE` (derived from persistent latency + backlog growth)
 8. Decision engine selects a recovery action
 9. Processor enters safe / degraded mode
 10. Latency stabilizes and execution continues
