@@ -57,9 +57,12 @@ export function detectFaults(
                 count: fault.count,
                 nature: "PERSISTENT",
             });
+            console.log(
+                `[CLASSIFICATION] ${fault.invariantId} classified as PERSISTENT after ${fault.count} occurrences`
+            );
+
         }
     }
 
     return emitted;
 }
-

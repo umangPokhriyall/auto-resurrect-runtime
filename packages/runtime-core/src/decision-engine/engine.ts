@@ -1,3 +1,4 @@
+
 import type { FaultSignature, Decision, FaultNature } from "shared-types/client";
 
 export interface DecisionContext {
@@ -33,6 +34,15 @@ export function decide(
                 target: "processor",
                 reason: "Latency exceeded safe bounds",
             };
+
+        case "BACKLOG_PRESSURE":
+            return {
+                signature,
+                action: "DEGRADE_MODE",
+                target: "processor",
+                reason: "Sustained backlog growth detected under load",
+            };
+
 
         default:
             return {
