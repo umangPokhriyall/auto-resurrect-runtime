@@ -12,33 +12,34 @@ export class Processor {
     private safeMode: boolean = false;
 
     process(input: SensorOutput): ProcessedData {
-        const start = Date.now();
+    const start = Date.now();
 
-        // FAULT: CPU STALL
-        if (FaultInjector.hasFault("PROCESSOR_STALL")) {
-            const stallUntil = Date.now() + 3000;
-            while (Date.now() < stallUntil) { }
-        }
-
-        // FAULT: LATENCY SPIKE
-        if (FaultInjector.hasFault("LATENCY_SPIKE")) {
-            const delayUntil = Date.now() + 1000;
-            while (Date.now() < delayUntil) { }
-        }
-
-        this.lastHeartbeat = Date.now();
-
-        const processedValue = this.safeMode
-            ? input.value // degraded logic
-            : input.value * 2;
-
-        const end = Date.now();
-
-        return {
-            processedValue,
-            latencyMs: end - start,
-        };
+    // If NOT in safe mode, allow fault to manifest
+    if (!this.safeMode && FaultInjector.hasFault("PROCESSOR_STALL")) {
+        const stallUntil = Date.now() + 3000;
+        while (Date.now() < stallUntil) { }
     }
+
+    // latency spike disabled in safe mode
+    if (!this.safeMode && FaultInjector.hasFault("LATENCY_SPIKE")) {
+        const delayUntil = Date.now() + 1000;
+        while (Date.now() < delayUntil) { }
+    }
+
+    this.lastHeartbeat = Date.now();
+
+    const processedValue = this.safeMode
+        ? input.value           // degraded path
+        : input.value * 2;      // normal path
+
+    const end = Date.now();
+
+    return {
+        processedValue,
+        latencyMs: end - start,
+    };
+}
+
 
     heartbeat(): number {
         return this.lastHeartbeat;
