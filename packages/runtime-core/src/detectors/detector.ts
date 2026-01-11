@@ -1,16 +1,13 @@
+
 import type { InvariantViolation, FaultEvent } from "shared-types/client";
 
-// Minimum occurrences before emitting a fault
 const FAULT_THRESHOLD = 2;
-
-// Occurrences beyond this are treated as persistent
 const PERSISTENT_THRESHOLD = 3;
 
-// Time window reserved for future use
-const FAULT_WINDOW_MS = 5000;
-
-// Active fault correlation state
-const activeFaults = new Map<string, FaultEvent>();
+const activeFaults = new Map<
+    string,
+    FaultEvent & { emittedPersistent?: boolean }
+>();
 
 export function detectFaults(
     violations: InvariantViolation[],
@@ -21,10 +18,9 @@ export function detectFaults(
     for (const v of violations) {
         const key = `${v.invariantId}:${v.signal.name}`;
 
-        const existing = activeFaults.get(key);
+        let fault = activeFaults.get(key);
 
-        if (!existing) {
-            // First observation of this violation
+        if (!fault) {
             activeFaults.set(key, {
                 id: key,
                 invariantId: v.invariantId,
@@ -33,22 +29,37 @@ export function detectFaults(
                 firstSeen: now,
                 lastSeen: now,
                 count: 1,
+                emittedPersistent: false,
             });
-        } else {
-            // Repeated violation
-            existing.lastSeen = now;
-            existing.count += 1;
-            if (existing.count >= FAULT_THRESHOLD) {
-                existing.nature =
-                    existing.count >= PERSISTENT_THRESHOLD
-                        ? "PERSISTENT"
-                        : "TRANSIENT";
+            continue;
+        }
 
-                emitted.push(existing);
-                activeFaults.delete(key);
-            }
+        fault.lastSeen = now;
+        fault.count += 1;
+
+        // TRANSIENT: do nothing
+        if (fault.count < PERSISTENT_THRESHOLD) {
+            continue;
+        }
+
+        // PERSISTENT: emit ONCE
+        if (!fault.emittedPersistent) {
+            fault.nature = "PERSISTENT";
+            fault.emittedPersistent = true;
+
+            emitted.push({
+                id: fault.id,
+                invariantId: fault.invariantId,
+                source: fault.source,
+                severity: fault.severity,
+                firstSeen: fault.firstSeen,
+                lastSeen: fault.lastSeen,
+                count: fault.count,
+                nature: "PERSISTENT",
+            });
         }
     }
 
     return emitted;
 }
+

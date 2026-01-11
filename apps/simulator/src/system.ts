@@ -1,5 +1,4 @@
 
-
 import { Sensor } from "./modules/sensor";
 import { Processor } from "./modules/processor";
 import { Transmitter } from "./modules/transmitter";
@@ -10,7 +9,6 @@ import { matchSignature } from "runtime-core/signatures";
 import { decide } from "runtime-core/decision-engine";
 import { executeDecision } from "runtime-core/executor";
 import { FaultInjector } from "./faults";
-
 
 export class EmbeddedSystem {
     private sensor = new Sensor();
@@ -24,7 +22,6 @@ export class EmbeddedSystem {
             const now = Date.now();
 
             const sensorData = this.sensor.read();
-
             if (!sensorData) {
                 console.log("[SYSTEM] Sensor data missing");
                 return;
@@ -44,22 +41,29 @@ export class EmbeddedSystem {
             const violations = checkInvariants(telemetry);
 
             if (violations.length > 0) {
-                console.log("[VIOLATION]", violations.map(v => v.invariantId));
+                console.log(
+                    "[VIOLATION]",
+                    violations.map(v => v.invariantId)
+                );
             }
 
             const faults = detectFaults(violations, now);
 
             if (faults.length > 0) {
                 const signature = matchSignature(faults);
-                console.log(`[SIGNATURE] ${signature}`);
+                const nature = faults[0]?.nature;
 
-                const decision = decide(signature);
+                console.log(
+                    `[SIGNATURE] ${signature}${nature ? ` (${nature})` : ""}`
+                );
+
+                const decision = decide(signature, { nature });
                 executeDecision(decision, this);
             }
         }, 1000);
     }
 
-    // ---- RECOVERY HOOKS ----
+    // RECOVERY HOOKS 
     restartModule(name: string) {
         if (name === "processor") {
             FaultInjector.clearFault("PROCESSOR_STALL");
@@ -68,11 +72,10 @@ export class EmbeddedSystem {
         }
     }
 
-
-
     degradeModule(name: string) {
         if (name === "processor") {
             this.processor.enableSafeMode();
         }
     }
 }
+
