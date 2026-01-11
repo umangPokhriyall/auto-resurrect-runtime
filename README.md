@@ -4,257 +4,252 @@
 
 ---
 
-## Problem Statement
+## 1. What This Project Is
 
-Modern mission-critical systems (defence, aerospace, industrial automation) fail not only due to complete hardware breakdowns, but due to subtle runtime degradations such as:
+Modern mission-critical systems (defence, aerospace, industrial automation) rarely fail catastrophically at once. Instead, they degrade silently through:
 
 - Stalled threads
 - Timing violations
 - Partial data corruption
 - Cascading module failures
 
-Existing resilience mechanisms treat failure as a binary event (alive / dead), leading to repeated resets, loss of context, and degraded operational continuity.
+Most resilience mechanisms treat failure as binary (alive/dead), leading to blind restarts, loss of context, and repeated failure loops.
 
-There is a need for a **self-healing runtime system** that can detect failure patterns, isolate faulty components, and autonomously reconfigure system behavior to maintain operation without full system restart.
+**Auto-Resurrect Runtime** is a supervisory runtime that:
+
+- Detects degradation patterns, not just crashes
+- Classifies failures deterministically
+- Recovers affected components without full system restart
 
 **Domain:** IoT & Automation / Open Innovation  
 **Inspiration:** Self-healing computing elements (SIH-25163)
 
 ---
 
-## Why Existing Solutions Fail
+## 2. Why Existing Solutions Fail
 
-*Unlike watchdog timers that only detect “alive/dead” states, Auto-Resurrect Runtime reasons about failure patterns and adapts system behavior instead of repeatedly resetting the system.*
+Unlike watchdog timers that only detect "alive/dead" states, Auto-Resurrect Runtime reasons about why a failure is happening and adapts system behavior instead of repeatedly resetting it.
 
 | Existing Approach | Why It's Insufficient |
 |-------------------|----------------------|
-| **Watchdog Timers** | Binary logic (alive/dead). Blind resets with no diagnosis. Repeated reset loops (e.g., Mars Pathfinder). |
-| **Process Managers (PM2, systemd)** | Restart services but cannot reason about why failure occurred or adapt behavior. |
-| **Hardware Redundancy Alone** | Wastes resources; does not handle software-level degradations or partial failures. |
-| **Kubernetes-style Self-Healing** | Designed for cloud services, not embedded / real-time systems. No fault semantics. |
+| **Watchdog Timers** | Binary logic. Blind resets. Repeated reset loops (e.g., Mars Pathfinder). |
+| **Process Managers (PM2, systemd)** | Restart services but cannot diagnose root cause or adapt behavior. |
+| **Hardware Redundancy Alone** | Costly; does not address software-level or partial failures. |
+| **Cloud-style Self-Healing (Kubernetes)** | Designed for cloud workloads, not embedded or real-time systems. |
 
 **➡️ All of the above react to failure. None understand it.**
 
 ---
 
-##  Core Insight
+## 3. Core Insight
 
 > **Failures are not binary. They leave signatures.**
 
-Instead of restarting systems blindly, Auto-Resurrect Runtime:
+Auto-Resurrect Runtime follows a deterministic reasoning loop:
 
-1. Observes invariant violations
-2. Matches them to known fault signatures
-3. Executes context-aware recovery actions
-
-This mirrors how FPGA partial reconfiguration works conceptually — bypassing faulty blocks instead of rebooting the entire system.
-
----
-
-## System Overview
-
-Auto-Resurrect Runtime sits beside the system it protects.
-
-**It does not replace:**
-- Application logic
-- OS scheduler
-- Hardware watchdogs
-
-Instead, it acts as an **intelligent supervisory runtime**.
-
-**Core Loop:**
 ```
 Observe → Detect → Classify → Decide → Recover → Continue
 ```
 
----
+Instead of rebooting entire systems, it isolates faulty components and reconfigures execution paths — conceptually similar to FPGA partial reconfiguration.
 
-## Project Flow & Logic
-
-1. The protected system emits runtime telemetry (latency, heartbeat).
-2. Telemetry is continuously evaluated against predefined invariants.
-3. Invariant violations are collected over a sliding time window.
-4. Correlated violations are matched against known fault signatures.
-5. A deterministic decision engine selects the safest recovery action.
-6. Recovery is applied only to the affected module.
-7. System execution continues without full restart.
-
-```
-Telemetry → Invariants → Signatures → Decision → Recovery
-```
-
-## Current Prototype Status (Round 1)
-
-The current implementation demonstrates:
-
-- A simulated embedded-style processing pipeline (Sensor → Processor → Transmitter)
-- Real-time telemetry generation (latency, heartbeat)
-- Deterministic invariant checks (latency bounds)
-- Temporal fault detection using sliding windows
-- Fault signature classification (e.g., THREAD_STALL)
-- Autonomous recovery via targeted module restart
-- Continued system operation without full restart
-
-Hardware-level reconfiguration and FPGA mapping are demonstrated conceptually and planned for later stages.
+All classification and recovery decisions are **deterministic, bounded, and explainable** — a deliberate design choice for safety-critical systems.
 
 ---
 
-## Failure Detection Engine (Low-Level & Deterministic)
+## 4. Design Principles
 
-### What We Monitor
+The system is guided by a small set of explicit design principles:
 
-The system defines **invariants** — properties that must always hold.
+- **Determinism over heuristics**
+- **Isolation over global restart**
+- **Classification before recovery**
 
-**Examples:**
-- Module heartbeat interval ≤ 200ms
-- Response latency within time window
-
-
-### How Detection Works
-
-- Metrics are sampled over sliding time windows
-- Comparators detect violations
-- Violations generate fault signals
-
-**Important:**
-```
-Invariant Violation ≠ Failure
-Multiple correlated violations = Fault Signature
-```
-
-**No ML. No heuristics. Fully deterministic.**
+These principles ensure predictable behavior under failure and load.
 
 ---
 
-## Decision Engine
+## 5. System at a Glance
 
-The decision engine maps **fault signatures → recovery actions** using a rule-based priority system.
+**High-level flow:**
 
-### Example Fault Mapping
+1. Runtime telemetry is emitted by system modules
+2. Telemetry is evaluated against invariants
+3. Violations are correlated over time
+4. Fault signatures are matched
+5. A deterministic decision engine selects a recovery action
+6. Recovery is applied only to the affected module
+7. System execution continues without full restart
 
-| Fault Signature | Root Cause | Action |
-|----------------|------------|--------|
-| Heartbeat loss + CPU spike | Thread deadlock | Restart module |
-| Latency spike + checksum errors | Data corruption | Switch to redundant module |
-| Repeated restarts | Persistent fault | Graceful degradation |
-
-### Safety Rules
-
-- Never restart the entire system unless unavoidable
-- Prefer isolation over reset
-- Preserve system continuity
+For detailed architecture and data-flow diagrams, see:  
+ 📄 Detailed Architecture Docs:[`docs/architecture.md`](docs/architecture.md) 
 
 ---
 
-## Recovery Actions
+## 6. How the System Handles Failures (Round-2 Focus)
 
-Auto-Resurrect Runtime can:
+Auto-Resurrect Runtime explicitly distinguishes **transient degradation** from **persistent faults**.
 
-- Restart only the faulty module
-- Switch execution to a redundant module
-- Bypass degraded paths
-- Reduce functionality gracefully
-- Escalate only if recovery fails
+### Key Concepts
 
-> **We do not heal hardware.**  
-> **We reconfigure system behavior around faulty components.**
+- Invariant violations ≠ failures
+- Fault persistence is determined via repeated invariant violations over time (count-based thresholding)
+- Persistent faults are emitted once, preventing recovery oscillations
+- Multiple correlated violations form a fault signature
+- Persistent signatures trigger graceful degradation, not repeated restarts
+
+### Supported Recovery Strategies
+
+- Targeted module restart
+- Bypassing degraded execution paths
+- Reduced-capacity operation (graceful degradation)
+- Sustained backlog pressure detection under load growth
+- Escalation only when recovery repeatedly fails
+
+📄 Detailed fault taxonomy: [`docs/fault-taxonomy.md`](docs/fault-taxonomy.md)
+
+📄 Signature → action mapping:[`docs/decision-matrix.md`](docs/decision-matrix.md) 
 
 ---
 
-## Demo Walkthrough 
+## 7. How the System Handles Growth
+
+The architecture is designed to scale without centralized bottlenecks:
+
+- Runtime instances are replicable per node
+- Invariant evaluation is local and stateless
+- Fault decisions are deterministic and bounded
+- Backpressure is detected via backlog accumulation, not instantaneous thresholds
+- Distributed deployments coordinate via lightweight control-plane signals
+
+**This enables:**
+
+- Horizontal scaling across devices or subsystems
+- Isolation of failures without system-wide impact
+- Predictable behavior under sustained load
+
+📄 Scaling and failure-avoidance strategy: [`docs/growth-and-failure.md`](docs/growth-and-failure.md) 
+
+---
+
+## 8. Current Implementation Status
+
+### ✅ What Is Implemented (Prototype)
+
+- Simulated embedded processing pipeline (Sensor → Processor → Transmitter)
+- Real-time telemetry (latency, heartbeat)
+- Deterministic invariant evaluation
+- Sliding-window / count-based violation correlation
+- Fault persistence classification (TRANSIENT vs PERSISTENT)
+- Fault signature matching (e.g., THREAD_STALL, BACKLOG_PRESSURE)
+- Targeted recovery actions with state reset
+- Continued operation without full system restart
+
+### 🔮 What Is Conceptual / Planned
+
+- Hardware-level FPGA partial reconfiguration
+- Distributed multi-node self-healing
+- Extended fault-models library (CPU, IO, memory, network)
+
+📄 Roadmap: [`docs/roadmap.md`](docs/roadmap.md) 
+
+---
+
+## 9. Demo & Reproducibility
 
 ### 🎥 Demo Video  
 
-[![Watch Full Demo](./assets/image1.png)](https://d14k6sh16ssaej.cloudfront.net/round1_Demo.mp4)  
+[![Watch Full Demo](./assets/demo_Thumbnail.png)](https://d14k6sh16ssaej.cloudfront.net/round2_Demo.mp4)  
 
+### Fault Scenario Demonstrated: Processor Stall → Backlog Pressure
 
-**Scenario: CPU Stall in Processing Module**
+1. System runs normally with stable latency
+2. **Fault injected:** processor execution stall
+3. **Invariants violated:** 
+    - Latency bound exceeded
+    - Backlog growth detected
+4. **Violations persist across multiple cycles**
+5. **Fault persistence classified after threshold (3 occurrences)**
+6. **Fault signature matched: BACKLOG_PRESSURE**
+7. **Recovery action executed: processor degraded to safe mode**
+8. **System latency stabilizes and execution continues**
 
-1. System runs normally
-2. **Fault injected:** processing module stalls
-3. **Invariant violated:** heartbeat timeout
-4. **Fault signature matched:** thread stall
-5. **Decision engine selects:** module restart
-6. Module recovers
-7. System continues operation
-
-
-**Console output clearly shows:**
 ```
-[VIOLATION] → [SIGNATURE] → [ACTION] → [RECOVERED]
-```
+[VIOLATION] → [PERSISTENCE] → [SIGNATURE] → [ACTION] → [STABILIZED]
 
-✔ No full restart  
-✔ No manual intervention
-
----
-
-## How to Run the Demo
-
-```bash
-cd apps/simulator
-bun install
-bun index.ts
 ```
 
-## System Architecture Diagram
+✔ No full system restart
+✔ No recovery oscillation
+✔ Persistent fault handled once
+✔ System continues under degraded but stable operation
 
-![Auto-Resurrect Architecture Diagram - Self Healing Loop](./assets/architecture.png)  
-
-
----
-
-## Limitations (Intentional & Explicit)
-
-- Does not repair physical hardware
-- Hardware fault detection is simulated
-- Partial FPGA reconfiguration is conceptual, not physical
-- Designed as a runtime layer, not a standalone OS
-
-**➡️ These are conscious design choices for clarity and feasibility.**
+📄 Scenario details: [Demo Scenarios](demo/scenarios.md)  
+📄 How to run: [How to Run the Demo](demo/how-to-run.md)
 
 ---
 
-## Round-2 Expansion Plan
+## Repository Structure
 
-Planned improvements:
-
-- Hierarchical monitoring (module → subsystem → system)
-- Persistent vs transient fault classification
-- Graceful degradation strategies
-- Mapping runtime logic to FPGA partial reconfiguration
-- Distributed self-healing (multi-node)
-- Formal fault taxonomy
-
----
+```
+apps/
+  simulator/        # Embedded-style runtime simulation
+packages/
+  runtime-core/     # Invariants, detectors, decision engine
+  fault-models/     # Formal fault taxonomy (conceptual)
+  shared-types/     # Shared runtime contracts
+docs/               # Architecture, scaling, decisions
+demo/               # Fault scenarios & execution guide
+```
 
 ---
 
 ## Team Contributions
 
-| Team Member | Primary Responsibility |
-|------------|------------------------|
-| Umang Pokhriyal | System architecture design, invariant modeling |
-| Aryan Gairola  | Fault injection simulator, telemetry pipeline |
-| Rahul Rawat | Signature matching & decision engine |
-| Vashu Chauhan | Recovery executor, documentation & demo scenarios |
+| Team Member | Responsibility |
+|------------|----------------|
+| **Umang Pokhriyal** | System architecture, invariant modeling |
+| **Aryan Gairola** | Fault injection simulator, telemetry pipeline |
+| **Rahul Rawat** | Signature matching, decision engine |
+| **Vashu Chauhan** | Recovery execution logic, documentation, demo scenarios |
 
-> All members contributed equally to design discussions, testing, and validation of the runtime behavior.
+All members contributed through code, design discussions, testing, and validation.
 
+---
 
-## License
+## Limitations (Intentional)
 
-Distributed under the MIT License. See `LICENSE` for more information.
+- Does not repair physical hardware
+- Hardware faults are simulated
+- FPGA reconfiguration is conceptual
+- Designed as a runtime layer, not a standalone OS
 
-## Contributing
+**These are conscious design choices to focus on runtime intelligence and clarity.**
 
-Contributions are what make the open source community such an amazing place to learn, inspire, and create. Any contributions you make are **greatly appreciated**.
+---
 
-If you have a suggestion that would make this better, please fork the repo and create a pull request. You can also simply open an issue with the tag "enhancement".
+## License & Contact
 
-## Contact
-
+**License:** MIT  
 **Team Lead:** Umang Pokhriyal  
-**GitHub:** [@umangPokhriyall](https://github.com/umangPokhriyall)  
+**GitHub:** [https://github.com/umangPokhriyall](https://github.com/umangPokhriyall)
 
-**Project Link:** [https://github.com/umangPokhriyall/auto-resurrect-runtime](https://github.com/umangPokhriyall/auto-resurrect-runtime)
+---
+
+## 🚀 Getting Started
+
+*Add installation and quick start instructions here*
+
+## 🤝 Contributing
+
+*Add contribution guidelines here*
+
+## 📚 Documentation
+
+For comprehensive documentation, please refer to the [`docs/`](docs) directory:
+
+- Architecture overview
+- Fault taxonomy
+- Decision matrix
+- Scaling strategy
+- Roadmap
