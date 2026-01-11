@@ -7,9 +7,14 @@ export interface TelemetrySnapshot {
     latencyMs: number;
 }
 
+let backlogScore = 0;
+const BACKLOG_DECAY = 0.8;
+
+
 const INVARIANTS = {
     HEARTBEAT_MAX_GAP_MS: 2000,
     MAX_ALLOWED_LATENCY_MS: 500,
+    MAX_BACKLOG_SCORE: 1500,
 };
 
 export function checkInvariants(
@@ -17,7 +22,7 @@ export function checkInvariants(
 ): InvariantViolation[] {
     const violations: InvariantViolation[] = [];
 
-    /* -------- Heartbeat Invariant -------- */
+    // Heartbeat Invariant 
 
     const heartbeatGap = telemetry.now - telemetry.heartbeatTs;
 
@@ -37,7 +42,7 @@ export function checkInvariants(
         });
     }
 
-    /* -------- Latency Invariant -------- */
+    // Latency Invariant 
 
     if (telemetry.latencyMs > INVARIANTS.MAX_ALLOWED_LATENCY_MS) {
         const signal: TelemetrySignal = {
@@ -55,5 +60,30 @@ export function checkInvariants(
         });
     }
 
+    // Backlog Growth Invariant
+    backlogScore =
+        backlogScore * BACKLOG_DECAY + telemetry.latencyMs;
+
+    if (backlogScore > INVARIANTS.MAX_BACKLOG_SCORE) {
+        const signal: TelemetrySignal = {
+            name: "system.backlog_score",
+            value: backlogScore,
+            timestamp: telemetry.now,
+        };
+
+        violations.push({
+            invariantId: "BACKLOG_GROWTH",
+            signal,
+            expected: `< ${INVARIANTS.MAX_BACKLOG_SCORE}`,
+            actual: backlogScore,
+            timestamp: telemetry.now,
+        });
+    }
+
+
     return violations;
+}
+
+export function resetBacklog() {
+    backlogScore = 0;
 }
