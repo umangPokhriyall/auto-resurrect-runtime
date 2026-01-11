@@ -1,4 +1,6 @@
 import type { Decision } from "shared-types/client";
+import { resetBacklog } from "runtime-core/invariants";
+
 
 const inProgress = new Set<string>();
 
@@ -23,6 +25,7 @@ export function executeDecision(
         case "DEGRADE_MODE":
             console.log(`[ACTION] Degrading ${decision.target}`);
             system.degradeModule(decision.target);
+            resetBacklog();
             break;
 
         case "NO_OP":
