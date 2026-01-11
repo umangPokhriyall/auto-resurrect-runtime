@@ -6,11 +6,9 @@ export type FaultSource =
     | "system"
     | "runtime";
 
-
 export type FaultSeverity = "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
 
 export type FaultNature = "TRANSIENT" | "PERSISTENT";
-
 
 export interface FaultEvent {
     id: string;
@@ -26,7 +24,5 @@ export interface FaultEvent {
 export type FaultSignature =
     | "THREAD_STALL"
     | "LATENCY_DEGRADATION"
+    | "BACKLOG_PRESSURE"
     | "UNKNOWN";
-
-
-
